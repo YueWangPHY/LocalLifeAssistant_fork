@@ -606,28 +606,7 @@ async def stream_chat_response(request: ChatRequest):
                 logger.info("Informing user that we're defaulting to New York")
         
         logger.info(f"Final city decision: {city}, Event type: {extracted_preferences.event_type if extracted_preferences else 'none'}")
-
-        # Step 4.5: Check if city is supported
-        location_id = event_crawler.eventbrite_crawler.get_location_id(city)
-        if location_id is None:
-            logger.warning(f"City '{city}' is not supported")
-            supported_cities = event_crawler.eventbrite_crawler.get_supported_cities()
-            # Format city names for display (replace underscores with spaces and title case)
-            formatted_cities = [c.replace('_', ' ').title() for c in supported_cities]
-            cities_list = ", ".join(formatted_cities)
-            error_message = f"Sorry, we don't currently support events in {city.title()}. We only support the following cities and their surrounding areas: {cities_list}. Please try one of these cities instead!"
-            yield f"data: {json.dumps({'type': 'message', 'content': error_message})}\n\n"
-            yield f"data: {json.dumps({'type': 'done'})}\n\n"
-            
-            # Save assistant error message
-            conversation_storage.save_message(user_id, conversation_id, {
-                "role": "assistant",
-                "content": error_message,
-                "timestamp": datetime.now().isoformat(),
-                "recommendations": []
-            })
-            return
-
+        
         # Step 5: Now proceed with event fetching (only when both location and event type are available)
         yield f"data: {json.dumps({'type': 'status', 'content': f'Searching for events in {city.title()}...'})}\n\n"
         await asyncio.sleep(0.3)
